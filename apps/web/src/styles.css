@@ -25,11 +25,12 @@ button, input, select { font: inherit; }
 }
 .brand img, .logo-login {
   width: 100%;
+  max-width: 100%;
   height: auto;
   display: block;
   border-radius: 16px;
 }
-.logo-login { width: 240px; margin-bottom: 16px; }
+.logo-login { margin-bottom: 20px; }
 .brand span { display: block; font-family: "Source Sans 3", sans-serif; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin-top: 10px; }
 .side a { text-decoration: none; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,.08); }
 .side button { margin-top: auto; background: transparent; color: inherit; border: 1px solid rgba(255,255,255,.3); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
@@ -67,11 +68,59 @@ th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #
 .detail { display: grid; grid-template-columns: 220px 1fr; gap: 24px; }
 .detail img, .placeholder { width: 220px; height: 300px; object-fit: cover; border-radius: 12px; background: #efe7d8; }
 .login {
-  min-height: 100vh; display: grid; place-items: center;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
   background: radial-gradient(circle at top, #1a7a58, #083c2c 55%);
 }
-.login-card { width: min(420px, calc(100% - 32px)); padding: 28px; }
+.login-card {
+  width: min(400px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  padding: 28px;
+  box-shadow: 0 18px 40px rgba(8, 28, 20, 0.28);
+}
 .login-card h1 { color: var(--green-dark); }
+.login-card input { width: 100%; }
+.login-card input:focus {
+  outline: 2px solid var(--green);
+  outline-offset: 1px;
+  border-color: var(--green);
+}
+.login-card .btn {
+  width: 100%;
+  justify-content: center;
+  padding: 12px 14px;
+}
+.login-card .btn:disabled { opacity: 0.7; cursor: progress; }
+.demo-account {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px dashed #c9bfae;
+  background: #f6f1e6;
+  color: var(--green-dark);
+  cursor: pointer;
+  text-align: left;
+}
+.demo-account span { font-weight: 700; }
+.demo-account small { color: #675e52; font-weight: 600; }
+.demo-account:hover, .demo-account:focus-visible {
+  background: #efe7d8;
+  border-color: var(--green);
+  outline: none;
+}
+.demo-status {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 600;
+}
 .stack { display: grid; gap: 12px; margin-top: 18px; }
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; }

@@ -12,6 +12,7 @@ type Values = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const { token, login } = useAuth();
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const form = useForm<Values>({ resolver: zodResolver(loginSchema) });
 
   if (token) return <Navigate to="/libros" replace />;
@@ -30,13 +31,15 @@ export function LoginPage() {
         })}
       >
         <img className="logo-login" src="/cmpc-logo.png" alt="CMPC" />
+        <p className="kicker">CMPC</p>
         <h1>Libros</h1>
-        <p className="muted">Inventario de la tienda</p>
+        <p className="muted">Entra para administrar el inventario de la tienda.</p>
         {error && <div className="error">{error}</div>}
+        {notice && <p className="notice" role="status">{notice}</p>}
         <div className="stack">
           <label>
             Correo
-            <input type="email" autoComplete="username" {...form.register('email')} />
+            <input type="email" autoComplete="username" placeholder="admin@cmpc.cl" {...form.register('email')} />
             {form.formState.errors.email && <span className="field-error">{form.formState.errors.email.message}</span>}
           </label>
           <label>
@@ -45,6 +48,17 @@ export function LoginPage() {
             {form.formState.errors.password && <span className="field-error">{form.formState.errors.password.message}</span>}
           </label>
           <button className="btn" type="submit">Entrar</button>
+          <button
+            className="btn-ghost"
+            type="button"
+            onClick={() => {
+              form.setValue('email', 'admin@cmpc.cl', { shouldValidate: true });
+              form.setValue('password', 'Admin123!', { shouldValidate: true });
+              setNotice('Pulsa Entrar para continuar');
+            }}
+          >
+            Usar cuenta demo
+          </button>
         </div>
       </form>
     </div>
