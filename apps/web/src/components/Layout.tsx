@@ -12,15 +12,15 @@ export function Layout() {
   return (
     <div className="min-h-svh bg-muted/40">
       <header className="sticky top-0 z-20 border-b bg-background">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
+        <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center gap-3 px-4 py-2">
           <Link to="/libros" className="flex items-center gap-3">
             <img className="h-8 w-auto" src="/cmpc-logo.svg" alt="CMPC" />
             <span className="leading-tight">
               <span className="block text-sm font-medium">Libros</span>
-              <span className="block text-xs text-muted-foreground">Inventario de la tienda</span>
+              <span className="hidden text-xs text-muted-foreground sm:block">Inventario de la tienda</span>
             </span>
           </Link>
-          <Separator orientation="vertical" className="mx-1 h-4!" />
+          <Separator orientation="vertical" className="mx-1 hidden h-4! sm:block" />
           <nav className="flex flex-1 items-center">
             <NavLink
               to="/libros"
