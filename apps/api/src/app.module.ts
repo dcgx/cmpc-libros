@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { BooksModule } from './books/books.module';
 import { CatalogModule } from './catalog/catalog.module';
+import { CoversModule } from './covers/covers.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -22,6 +23,7 @@ import { StorageModule } from './storage/storage.module';
     AuthModule,
     BooksModule,
     CatalogModule,
+    CoversModule,
     HealthModule,
   ],
   providers: [
