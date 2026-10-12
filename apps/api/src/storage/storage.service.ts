@@ -16,7 +16,7 @@ export type UploadedImage = {
 
 @Injectable()
 export class StorageService {
-  constructor(private readonly directory = process.env.UPLOAD_DIR || 'uploads') {}
+  private readonly directory = process.env.UPLOAD_DIR || 'uploads';
 
   save(file: UploadedImage): string {
     const ext = MIME_EXT[file.mimetype];
