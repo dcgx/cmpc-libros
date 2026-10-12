@@ -1,0 +1,19 @@
+{
+  "name": "cmpc-libros",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CMPC Libros — inventario de la tienda",
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,blue \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npm --prefix apps/api run start:dev",
+    "dev:web": "npm --prefix apps/web run dev",
+    "test": "npm --prefix apps/api test && npm --prefix apps/web test",
+    "test:cov": "npm --prefix apps/api run test:cov && npm --prefix apps/web run test:cov",
+    "build": "npm --prefix apps/api run build && npm --prefix apps/web run build",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

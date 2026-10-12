@@ -1,0 +1,79 @@
+// CMPC Libros — modelo relacional
+// Importable en https://dbdiagram.io
+
+Table users {
+  id uuid [pk]
+  email varchar [unique, not null]
+  password_hash varchar [not null, note: 'bcrypt']
+  name varchar [not null]
+  role user_role [not null, default: 'ADMIN']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Enum user_role {
+  ADMINñ
+  STAFF
+}
+
+Table authors {
+  id uuid [pk]
+  name varchar [not null, unique]
+  created_at timestamptz [not null]
+}
+
+Table publishers {
+  id uuid [pk]
+  name varchar [not null, unique]
+  created_at timestamptz [not null]
+}
+
+Table genres {
+  id uuid [pk]
+  name varchar [not null, unique]
+  created_at timestamptz [not null]
+}
+
+Table books {
+  id uuid [pk]
+  title varchar [not null]
+  author_id uuid [not null, ref: > authors.id]
+  publisher_id uuid [not null, ref: > publishers.id]
+  genre_id uuid [not null, ref: > genres.id]
+  price decimal(12,2) [not null, note: 'CLP']
+  stock int [not null, default: 0]
+  available boolean [not null, default: true, note: 'Disponibilidad comercial, independiente del stock']
+  image_path varchar [note: 'Ruta relativa servida en /uploads']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz [note: 'Soft delete']
+
+  indexes {
+    title
+    author_id
+    publisher_id
+    genre_id
+    available
+    deleted_at
+    price
+    created_at
+    (deleted_at, available, genre_id) [name: 'books_list_filter_idx']
+  }
+}
+
+Table audit_logs {
+  id uuid [pk]
+  user_id uuid [ref: > users.id]
+  action varchar [not null]
+  entity varchar [not null]
+  entity_id varchar
+  metadata jsonb
+  ip varchar
+  created_at timestamptz [not null]
+
+  indexes {
+    (entity, entity_id)
+    user_id
+    created_at
+  }
+}
