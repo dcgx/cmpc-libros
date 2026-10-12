@@ -12,7 +12,6 @@ Inventario web de la tienda: login JWT, listado con filtros, orden múltiple, pa
 ## Arranque con Docker
 
 ```bash
-brew services stop postgresql@16
 docker compose up --build
 ```
 
