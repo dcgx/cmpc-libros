@@ -23,8 +23,16 @@ button, input, select { font: inherit; }
   flex-direction: column;
   gap: 24px;
 }
-.brand { font-family: Fraunces, serif; font-size: 28px; line-height: 1; }
-.brand span { display: block; font-family: "Source Sans 3", sans-serif; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin-top: 8px; }
+.brand img, .logo-login {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #111;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.logo-login { width: 190px; margin-bottom: 16px; }
+.brand span { display: block; font-family: "Source Sans 3", sans-serif; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin-top: 10px; }
 .side a { text-decoration: none; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,.08); }
 .side button { margin-top: auto; background: transparent; color: inherit; border: 1px solid rgba(255,255,255,.3); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
 .main { padding: 32px; }

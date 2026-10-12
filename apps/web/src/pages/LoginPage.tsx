@@ -29,7 +29,8 @@ export function LoginPage() {
           }
         })}
       >
-        <h1>CMPC Libros</h1>
+        <img className="logo-login" src="/cmpc-logo.png" alt="CMPC" />
+        <h1>Libros</h1>
         <p className="muted">Inventario de la tienda</p>
         {error && <div className="error">{error}</div>}
         <div className="stack">

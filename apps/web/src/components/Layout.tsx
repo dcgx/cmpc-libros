@@ -8,7 +8,10 @@ export function Layout() {
   return (
     <div className="shell">
       <aside className="side">
-        <div className="brand">CMPC<span>Libros</span></div>
+        <div className="brand">
+          <img src="/cmpc-logo.png" alt="CMPC" />
+          <span>Libros</span>
+        </div>
         <Link to="/libros">Inventario</Link>
         <button type="button" onClick={logout}>Cerrar sesión</button>
       </aside>
