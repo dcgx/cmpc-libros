@@ -1,10 +1,37 @@
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, download } from '../api/client';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { money, toSearchParams } from '../lib/query';
 import { Book, BookQuery, NamedRef, PageMeta, emptyQuery } from '../types';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
+const primarySorts = [
+  ['createdAt:desc', 'Más recientes'],
+  ['title:asc', 'Título A-Z'],
+  ['title:desc', 'Título Z-A'],
+  ['price:asc', 'Precio menor'],
+  ['price:desc', 'Precio mayor'],
+  ['author:asc', 'Autor'],
+  ['stock:desc', 'Stock'],
+] as const;
+
+const secondarySorts = [
+  ['none', 'Ninguno'],
+  ['title:asc', 'Título A-Z'],
+  ['price:asc', 'Precio menor'],
+  ['author:asc', 'Autor'],
+] as const;
 
 export function BooksPage() {
   const [draft, setDraft] = useState(emptyQuery.search);
@@ -30,120 +57,161 @@ export function BooksPage() {
   const rows = books.data?.data ?? [];
 
   return (
-    <section>
-      <div className="top">
-        <div>
-          <h1>Inventario</h1>
-          <p className="muted">{meta ? `${meta.total} libros` : 'Cargando catálogo'}</p>
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="grid gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Inventario</h1>
+          <p className="text-sm text-muted-foreground">{meta ? `${meta.total} libros` : 'Cargando catálogo'}</p>
         </div>
-        <div className="row">
-          <button className="btn-ghost" type="button" onClick={() => download(`/api/books/export?${params}`, 'libros.csv')}>
-            Exportar CSV
-          </button>
-          <Link className="btn" to="/libros/nuevo">Nuevo libro</Link>
-        </div>
+        <Button variant="outline" size="sm" type="button" onClick={() => download(`/api/books/export?${params}`, 'libros.csv')}>
+          <Download />
+          Exportar CSV
+        </Button>
       </div>
 
-      <form className="filters" onSubmit={(event: FormEvent) => event.preventDefault()}>
-        <label className="span-2">
-          Buscar
-          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Título, autor, editorial o género" />
-        </label>
-        <Select label="Autor" value={query.authorId} options={authors.data?.data ?? []} onChange={(authorId) => update({ authorId })} />
-        <Select label="Editorial" value={query.publisherId} options={publishers.data?.data ?? []} onChange={(publisherId) => update({ publisherId })} />
-        <Select label="Género" value={query.genreId} options={genres.data?.data ?? []} onChange={(genreId) => update({ genreId })} />
-        <label>
-          Disponibilidad
-          <select value={query.available} onChange={(event) => update({ available: event.target.value as BookQuery['available'] })}>
-            <option value="">Todas</option>
-            <option value="true">Disponible</option>
-            <option value="false">No disponible</option>
-          </select>
-        </label>
-        <label>
-          Orden principal
-          <select value={`${query.primarySort}:${query.primaryDir}`} onChange={(event) => {
-            const [primarySort, primaryDir] = event.target.value.split(':') as [BookQuery['primarySort'], BookQuery['primaryDir']];
-            update({ primarySort, primaryDir });
-          }}>
-            <option value="createdAt:desc">Más recientes</option>
-            <option value="title:asc">Título A-Z</option>
-            <option value="title:desc">Título Z-A</option>
-            <option value="price:asc">Precio menor</option>
-            <option value="price:desc">Precio mayor</option>
-            <option value="author:asc">Autor</option>
-            <option value="stock:desc">Stock</option>
-          </select>
-        </label>
-        <label>
-          Segundo orden
-          <select value={query.secondarySort ? `${query.secondarySort}:${query.secondaryDir}` : ''} onChange={(event) => {
-            if (!event.target.value) {
-              update({ secondarySort: '' });
-              return;
-            }
-            const [secondarySort, secondaryDir] = event.target.value.split(':') as [Exclude<BookQuery['secondarySort'], ''>, BookQuery['secondaryDir']];
-            update({ secondarySort, secondaryDir });
-          }}>
-            <option value="">Ninguno</option>
-            <option value="title:asc">Título A-Z</option>
-            <option value="price:asc">Precio menor</option>
-            <option value="author:asc">Autor</option>
-          </select>
-        </label>
-      </form>
-
-      {books.isError && <div className="error">No se pudo cargar el inventario.</div>}
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th></th>
-              <th>Título</th>
-              <th>Autor</th>
-              <th>Editorial</th>
-              <th>Género</th>
-              <th>Precio</th>
-              <th>Stock</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card>
+        <CardContent>
+          <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event: FormEvent) => event.preventDefault()}>
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="search">Buscar</Label>
+              <Input id="search" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Título, autor, editorial o género" />
+            </div>
+            <CatalogSelect label="Autor" value={query.authorId} options={authors.data?.data ?? []} onChange={(authorId) => update({ authorId })} />
+            <CatalogSelect label="Editorial" value={query.publisherId} options={publishers.data?.data ?? []} onChange={(publisherId) => update({ publisherId })} />
+            <CatalogSelect label="Género" value={query.genreId} options={genres.data?.data ?? []} onChange={(genreId) => update({ genreId })} />
+            <div className="grid gap-2">
+              <Label>Disponibilidad</Label>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                size="sm"
+                spacing={0}
+                className="w-full"
+                aria-label="Disponibilidad"
+                value={query.available || 'all'}
+                onValueChange={(available) => {
+                  if (!available) return;
+                  update({ available: available === 'all' ? '' : available as BookQuery['available'] });
+                }}
+              >
+                <ToggleGroupItem value="all" className="flex-1">Todas</ToggleGroupItem>
+                <ToggleGroupItem value="true" className="flex-1">Disponible</ToggleGroupItem>
+                <ToggleGroupItem value="false" className="flex-1">No disponible</ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+            <SortSelect
+              label="Orden principal"
+              value={`${query.primarySort}:${query.primaryDir}`}
+              options={primarySorts}
+              onChange={(value) => {
+                const [primarySort, primaryDir] = value.split(':') as [BookQuery['primarySort'], BookQuery['primaryDir']];
+                update({ primarySort, primaryDir });
+              }}
+            />
+            <SortSelect
+              label="Segundo orden"
+              value={query.secondarySort ? `${query.secondarySort}:${query.secondaryDir}` : 'none'}
+              options={secondarySorts}
+              onChange={(value) => {
+                if (value === 'none') {
+                  update({ secondarySort: '' });
+                  return;
+                }
+                const [secondarySort, secondaryDir] = value.split(':') as [Exclude<BookQuery['secondarySort'], ''>, BookQuery['secondaryDir']];
+                update({ secondarySort, secondaryDir });
+              }}
+            />
+          </form>
+        </CardContent>
+        {books.isError && (
+          <div className="px-4 pb-4">
+            <Alert variant="destructive">
+              <AlertDescription>No se pudo cargar el inventario.</AlertDescription>
+            </Alert>
+          </div>
+        )}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14"></TableHead>
+              <TableHead>Título</TableHead>
+              <TableHead>Autor</TableHead>
+              <TableHead>Editorial</TableHead>
+              <TableHead>Género</TableHead>
+              <TableHead>Precio</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead>Estado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((book) => (
-              <tr key={book.id}>
-                <td>{book.imageUrl ? <img className="cover" src={book.imageUrl} alt="" /> : <div className="cover" />}</td>
-                <td><Link to={`/libros/${book.id}`}>{book.title}</Link></td>
-                <td>{book.author.name}</td>
-                <td>{book.publisher.name}</td>
-                <td>{book.genre.name}</td>
-                <td>{money(book.price)}</td>
-                <td>{book.stock}</td>
-                <td><span className={book.available ? 'badge' : 'badge off'}>{book.available ? 'Disponible' : 'No disponible'}</span></td>
-              </tr>
+              <TableRow key={book.id}>
+                <TableCell>
+                  {book.imageUrl
+                    ? <img className="h-14 w-10 rounded-md object-cover bg-muted" src={book.imageUrl} alt="" />
+                    : <div className="h-14 w-10 rounded-md bg-muted" />}
+                </TableCell>
+                <TableCell className="whitespace-normal">
+                  <Link className="font-medium hover:underline" to={`/libros/${book.id}`}>{book.title}</Link>
+                </TableCell>
+                <TableCell>{book.author.name}</TableCell>
+                <TableCell>{book.publisher.name}</TableCell>
+                <TableCell>{book.genre.name}</TableCell>
+                <TableCell>{money(book.price)}</TableCell>
+                <TableCell>{book.stock}</TableCell>
+                <TableCell>
+                  <Badge variant={book.available ? 'default' : 'destructive'}>
+                    {book.available ? 'Disponible' : 'No disponible'}
+                  </Badge>
+                </TableCell>
+              </TableRow>
             ))}
             {!books.isLoading && rows.length === 0 && (
-              <tr><td colSpan={8}>No hay libros con esos filtros.</td></tr>
+              <TableRow>
+                <TableCell colSpan={8} className="h-16 text-center text-muted-foreground">No hay libros con esos filtros.</TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
-      <div className="pager">
-        <button className="btn-ghost" type="button" disabled={!meta || meta.page <= 1} onClick={() => update({ page: query.page - 1 })}>Anterior</button>
-        <span>{meta ? `Página ${meta.page} de ${meta.totalPages}` : ''}</span>
-        <button className="btn-ghost" type="button" disabled={!meta || meta.page >= meta.totalPages} onClick={() => update({ page: (search === query.search ? query.page : 1) + 1 })}>Siguiente</button>
-      </div>
+          </TableBody>
+        </Table>
+        <CardFooter className="justify-between">
+          <Button variant="outline" size="sm" type="button" disabled={!meta || meta.page <= 1} onClick={() => update({ page: query.page - 1 })}>Anterior</Button>
+          <span className="text-sm text-muted-foreground">{meta ? `Página ${meta.page} de ${meta.totalPages}` : ''}</span>
+          <Button variant="outline" size="sm" type="button" disabled={!meta || meta.page >= meta.totalPages} onClick={() => update({ page: (search === query.search ? query.page : 1) + 1 })}>Siguiente</Button>
+        </CardFooter>
+      </Card>
     </section>
   );
 }
 
-function Select({ label, value, options, onChange }: { label: string; value: string; options: NamedRef[]; onChange: (value: string) => void }) {
+function CatalogSelect({ label, value, options, onChange }: { label: string; value: string; options: NamedRef[]; onChange: (value: string) => void }) {
   return (
-    <label>
-      {label}
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">Todos</option>
-        {options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
-      </select>
-    </label>
+    <div className="grid gap-2">
+      <Label>{label}</Label>
+      <Select value={value || 'all'} onValueChange={(next) => onChange(next === 'all' ? '' : next)}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Todos" />
+        </SelectTrigger>
+        <SelectContent position="popper">
+          <SelectItem value="all">Todos</SelectItem>
+          {options.map((option) => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function SortSelect({ label, value, options, onChange }: { label: string; value: string; options: readonly (readonly [string, string])[]; onChange: (value: string) => void }) {
+  return (
+    <div className="grid gap-2">
+      <Label>{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent position="popper">
+          {options.map(([optionValue, optionLabel]) => <SelectItem key={optionValue} value={optionValue}>{optionLabel}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
