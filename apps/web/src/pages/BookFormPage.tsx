@@ -4,6 +4,7 @@ import { ReactNode, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
+import { coverToFile, CoverLookup } from '../lib/cover';
 import { bookSchema, BookFormValues } from '../lib/validation';
 import { Book } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,6 +19,10 @@ export function BookFormPage() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [isbn, setIsbn] = useState('');
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverSource, setCoverSource] = useState('');
+  const [lookingUp, setLookingUp] = useState(false);
   const existing = useQuery({
     queryKey: ['book', id],
     enabled: Boolean(id),
@@ -47,6 +52,35 @@ export function BookFormPage() {
         }
       : undefined,
   });
+
+  const preview = coverPreview ?? existing.data?.data.imageUrl ?? null;
+
+  async function lookupCover() {
+    const title = form.getValues('title').trim();
+    const code = isbn.trim();
+    if (!code && title.length < 2) {
+      setError('Indica un ISBN o un título para buscar la carátula');
+      return;
+    }
+    setLookingUp(true);
+    setError('');
+    const params = new URLSearchParams();
+    if (code) params.set('isbn', code);
+    if (title.length >= 2) params.set('title', title);
+    try {
+      const { data } = await api<CoverLookup>(`/api/covers?${params.toString()}`);
+      const next = coverToFile(data);
+      setFile(next);
+      setCoverPreview(URL.createObjectURL(next));
+      setCoverSource('Carátula de Open Library');
+    } catch (caught) {
+      const apiError = caught instanceof ApiError ? caught : null;
+      setCoverSource('');
+      setError(apiError?.message || 'No se pudo buscar la carátula');
+    } finally {
+      setLookingUp(false);
+    }
+  }
 
   return (
     <section className="flex flex-col gap-4">
@@ -127,8 +161,29 @@ export function BookFormPage() {
                 )}
               />
             </Field>
+            <Field className="sm:col-span-2" id="isbn" label="ISBN">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input id="isbn" value={isbn} onChange={(event) => setIsbn(event.target.value)} placeholder="9780140328721" />
+                <Button type="button" variant="outline" disabled={lookingUp} onClick={() => void lookupCover()}>
+                  {lookingUp ? 'Buscando…' : 'Buscar carátula'}
+                </Button>
+              </div>
+            </Field>
             <Field className="sm:col-span-2" id="image" label="Imagen">
-              <Input id="image" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+              <Input
+                id="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  const next = event.target.files?.[0] ?? null;
+                  setFile(next);
+                  setCoverSource('');
+                  setCoverPreview(next ? URL.createObjectURL(next) : null);
+                }}
+              />
+              <p className="text-xs text-muted-foreground">Si no subes un archivo, busca la carátula por ISBN o título.</p>
+              {preview && <img className="h-40 w-28 rounded-lg object-cover bg-muted" src={preview} alt="Carátula" />}
+              {coverSource && <p className="text-xs text-muted-foreground">{coverSource}</p>}
             </Field>
             <div>
               <Button type="submit">{id ? 'Guardar cambios' : 'Crear libro'}</Button>
