@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api/client';
 import { coverToFile, CoverLookup } from '../lib/cover';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { bookSchema, BookFormValues } from '../lib/validation';
 import { Book } from '../types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,6 +24,8 @@ export function BookFormPage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverSource, setCoverSource] = useState('');
   const [lookingUp, setLookingUp] = useState(false);
+  const [manualImage, setManualImage] = useState(false);
+  const lookupSeq = useRef(0);
   const existing = useQuery({
     queryKey: ['book', id],
     enabled: Boolean(id),
@@ -54,33 +57,46 @@ export function BookFormPage() {
   });
 
   const preview = coverPreview ?? existing.data?.data.imageUrl ?? null;
+  const watchedTitle = form.watch('title');
+  const debouncedTitle = useDebouncedValue(watchedTitle, 400);
+  const savedImage = existing.data?.data.imageUrl ?? null;
 
-  async function lookupCover() {
+  async function lookupCover(options?: { quiet?: boolean }) {
     const title = form.getValues('title').trim();
     const code = isbn.trim();
     if (!code && title.length < 2) {
-      setError('Indica un ISBN o un título para buscar la carátula');
+      if (!options?.quiet) setError('Indica un ISBN o un título para buscar la carátula');
       return;
     }
+    const seq = ++lookupSeq.current;
     setLookingUp(true);
-    setError('');
+    if (!options?.quiet) setError('');
     const params = new URLSearchParams();
     if (code) params.set('isbn', code);
     if (title.length >= 2) params.set('title', title);
     try {
       const { data } = await api<CoverLookup>(`/api/covers?${params.toString()}`);
+      if (seq !== lookupSeq.current) return;
       const next = coverToFile(data);
       setFile(next);
       setCoverPreview(URL.createObjectURL(next));
       setCoverSource('Carátula de Open Library');
+      setError('');
     } catch (caught) {
+      if (seq !== lookupSeq.current) return;
       const apiError = caught instanceof ApiError ? caught : null;
       setCoverSource('');
-      setError(apiError?.message || 'No se pudo buscar la carátula');
+      if (!options?.quiet) setError(apiError?.message || 'No se pudo buscar la carátula');
     } finally {
-      setLookingUp(false);
+      if (seq === lookupSeq.current) setLookingUp(false);
     }
   }
+
+  useEffect(() => {
+    if (manualImage || savedImage) return;
+    if (debouncedTitle.trim().length < 2) return;
+    void lookupCover({ quiet: true });
+  }, [debouncedTitle, manualImage, savedImage]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -176,12 +192,13 @@ export function BookFormPage() {
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(event) => {
                   const next = event.target.files?.[0] ?? null;
+                  setManualImage(Boolean(next));
                   setFile(next);
                   setCoverSource('');
                   setCoverPreview(next ? URL.createObjectURL(next) : null);
                 }}
               />
-              <p className="text-xs text-muted-foreground">Si no subes un archivo, busca la carátula por ISBN o título.</p>
+              <p className="text-xs text-muted-foreground">Si el libro no tiene imagen, al escribir el título se busca la carátula y queda lista para guardar.</p>
               {preview && <img className="h-40 w-28 rounded-lg object-cover bg-muted" src={preview} alt="Carátula" />}
               {coverSource && <p className="text-xs text-muted-foreground">{coverSource}</p>}
             </Field>
